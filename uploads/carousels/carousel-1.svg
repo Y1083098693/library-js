@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">
+  <!-- 背景 -->
+  <rect width="1200" height="400" fill="#f5f5f5"/>
+  
+  <!-- 书架背景 -->
+  <rect x="700" y="50" width="400" height="300" fill="#d4b68c" rx="5"/>
+  <rect x="720" y="70" width="360" height="260" fill="#e6c9a3" rx="3"/>
+  
+  <!-- 书籍 -->
+  <rect x="750" y="100" width="60" height="180" fill="#3498db"/>
+  <rect x="820" y="90" width="50" height="190" fill="#e74c3c"/>
+  <rect x="880" y="110" width="55" height="170" fill="#2ecc71"/>
+  <rect x="945" y="80" width="50" height="200" fill="#f39c12"/>
+  <rect x="1005" y="100" width="60" height="180" fill="#9b59b6"/>
+  <rect x="1075" y="95" width="50" height="185" fill="#1abc9c"/>
+  
+  <!-- 书籍装饰 -->
+  <line x1="750" y1="140" x2="810" y2="140" stroke="#ffffff" stroke-width="2"/>
+  <line x1="820" y1="130" x2="870" y2="130" stroke="#ffffff" stroke-width="2"/>
+  <line x1="880" y1="150" x2="935" y2="150" stroke="#ffffff" stroke-width="2"/>
+  
+  <!-- 标题区域渐变 -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#000000;stop-opacity:0.7"/>
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="600" height="400" fill="url(#grad1)"/>
+  
+  <!-- 文字 -->
+  <text x="50" y="150" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white">2024年度精选图书</text>
+  <text x="50" y="200" font-family="Arial, sans-serif" font-size="20" fill="white">精选年度畅销好书，限时7折优惠</text>
+  <rect x="50" y="220" width="150" height="40" rx="20" fill="#3498db"/>
+  <text x="75" y="248" font-family="Arial, sans-serif" font-size="16" fill="white">立即选购</text>
+</svg>
+    
