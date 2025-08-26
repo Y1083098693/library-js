@@ -66,13 +66,8 @@ router.get("/category/:categoryId", async (req, res) => {
     // 标准化响应格式
     res.json({
       success: true,
-      data: Array.isArray(result.books) ? result.books : [],
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total: result.total || 0,
-        pages: Math.ceil((result.total || 0) / limitNum),
-      },
+      data: result.books, // 直接返回数组
+      pagination: result.pagination,
     });
   } catch (error) {
     console.error("根据分类获取图书错误:", error);
