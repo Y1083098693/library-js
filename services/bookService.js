@@ -62,6 +62,72 @@ class BookService {
       throw error;
     }
   }
+  // 新增：获取相关推荐书本
+  static async getRelatedBooks(bookId) {
+    try {
+      // 方法1：使用关联表查询（推荐）
+      const relatedBooks = await BookRepository.getRelatedBooks(bookId);
+
+      // 方法2：若无关联表，按分类随机推荐（备用方案）
+      // const book = await this.getBookById(bookId);
+      // const relatedBooks = await BookRepository.getBooksByCategory(
+      //   book.category_id,
+      //   { limit: 4, exclude: bookId }
+      // );
+
+      return relatedBooks;
+    } catch (error) {
+      console.error("获取相关推荐失败:", error);
+      throw error;
+    }
+  }
+  static async getBookDetail(id) {
+    try {
+      // 使用与分类页面相同的数据获取逻辑
+      const book = await BookRepository.getBookById(id);
+
+      if (!book) {
+        throw new ApiError(404, "图书不存在");
+      }
+
+      // 确保价格数据正确 - 关键修复！
+      const price =
+        parseFloat(book.selling_price) || parseFloat(book.price) || 0;
+      const originalPrice = parseFloat(book.original_price) || price;
+
+      // 计算有效折扣
+      const discount =
+        originalPrice > 0 && price > 0 && price < originalPrice
+          ? Math.round((1 - price / originalPrice) * 100)
+          : 0;
+
+      // 获取相关推荐 - 使用与分类页面相同的逻辑
+      const relatedBooks = await this.getBooksByCategory(book.category_id, {
+        limit: 4,
+        exclude: id, // 排除当前书本
+      });
+
+      return {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        cover_image: book.cover_image || "/images/default-book.jpg",
+        price: price,
+        original_price: originalPrice,
+        discount: discount,
+        rating: parseFloat(book.rating) || 0,
+        reviews: parseInt(book.review_count) || 0,
+        description: book.description || "暂无内容简介",
+        category: book.category_name,
+        stock: parseInt(book.stock_quantity) || 0,
+        is_available: parseInt(book.stock_quantity) > 0,
+        related_books: relatedBooks.books || [], // 使用分类页面相同的数据结构
+      };
+    } catch (error) {
+      console.error("获取书本详情服务错误:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = BookService;

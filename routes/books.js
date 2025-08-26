@@ -1,6 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const BookService = require("../services/bookService");
+const BookController = require("../controllers/bookController");
+
+// 获取书本详情
+router.get("/:id", BookController.getBookDetail);
+
+// 获取相关推荐
+router.get("/:id/related", BookController.getRelatedBooks);
 
 // 获取所有图书（支持分页、筛选、排序和搜索）
 router.get("/", async (req, res) => {

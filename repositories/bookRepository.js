@@ -84,22 +84,52 @@ const BookRepository = {
   },
 
   // 获取图书详情
+  // 获取书本详情（与分类页面保持一致）
   async getBookById(id) {
     try {
       const [rows] = await db.execute(
-        `SELECT 
-          b.*,
-          c.name as category_name,
-          c.slug as category_slug
-         FROM books b
-         LEFT JOIN categories c ON b.category_id = c.id
-         WHERE b.id = ?`,
-        [Number(id)]
+        `
+      SELECT 
+        b.*,
+        c.name as category_name,
+        c.slug as category_slug,
+        COALESCE(i.quantity, 0) as stock_quantity
+      FROM books b
+      LEFT JOIN categories c ON b.category_id = c.id
+      LEFT JOIN inventory i ON b.id = i.book_id
+      WHERE b.id = ?
+    `,
+        [id]
       );
+
       return rows[0] || null;
     } catch (error) {
       console.error("获取图书详情错误:", error);
-      throw new Error("获取图书详情失败");
+      throw error;
+    }
+  },
+
+  // 新增：获取分类书本（排除特定书本）
+  async getBooksByCategoryExclude(categoryId, excludeId, limit = 4) {
+    try {
+      const [rows] = await db.execute(
+        `
+      SELECT 
+        b.*,
+        c.name as category_name
+      FROM books b
+      LEFT JOIN categories c ON b.category_id = c.id
+      WHERE b.category_id = ? AND b.id != ?
+      ORDER BY RAND() -- 随机排序获取不同推荐
+      LIMIT ?
+    `,
+        [categoryId, excludeId, limit]
+      );
+
+      return rows;
+    } catch (error) {
+      console.error("获取分类图书错误:", error);
+      return []; // 出错返回空数组
     }
   },
 
@@ -167,6 +197,83 @@ const BookRepository = {
     } catch (error) {
       console.error("根据分类获取图书错误:", error);
       throw new Error("根据分类获取图书失败");
+    }
+  },
+  // 新增：获取相关书本（基于关联表）
+  async getRelatedBooks(bookId) {
+    try {
+      const [rows] = await db.execute(
+        `
+        SELECT b.* FROM book_relations br
+        JOIN books b ON br.related_book_id = b.id
+        WHERE br.book_id = ?
+        ORDER BY br.relation_type DESC
+        LIMIT 4
+      `,
+        [bookId]
+      );
+
+      return rows;
+    } catch (error) {
+      console.error("获取相关书本错误:", error);
+      throw error;
+    }
+  },
+  // 增强获取书本详情方法
+  async getBookDetailWithRelations(id) {
+    try {
+      const [books] = await db.execute(
+        `
+      SELECT 
+        b.*,
+        c.name AS category_name,
+        c.slug AS category_slug,
+        i.quantity AS stock_quantity,
+        -- 计算折扣率
+        CASE 
+          WHEN b.original_price > 0 AND b.selling_price > 0 
+          THEN ROUND((1 - b.selling_price / b.original_price) * 100)
+          ELSE 0 
+        END AS discount_rate
+      FROM books b
+      LEFT JOIN categories c ON b.category_id = c.id
+      LEFT JOIN inventory i ON b.id = i.book_id
+      WHERE b.id = ?
+    `,
+        [id]
+      );
+
+      if (!books || books.length === 0) return null;
+
+      const book = books[0];
+
+      // 获取相关书本（避免重复）
+      const [relatedBooks] = await db.execute(
+        `
+      SELECT DISTINCT
+        b.id,
+        b.title, 
+        b.author,
+        b.cover_image,
+        b.selling_price AS price,
+        b.original_price,
+        b.rating,
+        b.review_count
+      FROM book_relations br
+      JOIN books b ON br.related_book_id = b.id
+      WHERE br.book_id = ? AND b.id != ?
+      LIMIT 4
+    `,
+        [id, id]
+      );
+
+      return {
+        ...book,
+        related_books: relatedBooks || [],
+      };
+    } catch (error) {
+      console.error("获取书本详情错误:", error);
+      throw error;
     }
   },
 };
