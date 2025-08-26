@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
-// 引入封装的图书数据访问层
-const BookRepository = require("../repositories/bookRepository");
+const BookService = require("../services/bookService");
 
 // 获取所有图书（支持分页、筛选、排序和搜索）
 router.get("/", async (req, res) => {
@@ -10,29 +9,77 @@ router.get("/", async (req, res) => {
 
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
-    const offset = (pageNum - 1) * limitNum;
 
-    // 调用封装的方法，无需关注SQL细节
-    const { books, total } = await BookRepository.getBooks({
+    // 使用服务层
+    const result = await BookService.getBooks({
       keyword: search,
       categoryId: category,
       sort,
+      page: pageNum,
       limit: limitNum,
-      offset,
     });
 
     res.json({
-      books,
+      success: true,
+      data: result.books,
       pagination: {
         page: pageNum,
         limit: limitNum,
-        total,
-        pages: Math.ceil(total / limitNum),
+        total: result.total,
+        pages: Math.ceil(result.total / limitNum),
       },
     });
   } catch (error) {
     console.error("获取图书列表错误:", error);
-    res.status(500).json({ message: "获取图书列表失败" });
+    res.status(500).json({
+      success: false,
+      message: "获取图书列表失败",
+    });
+  }
+});
+
+// 根据分类获取图书
+router.get("/category/:categoryId", async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    const { page = 1, limit = 12, sort = "recommended" } = req.query;
+
+    // 参数验证
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 12;
+    const categoryIdNum = parseInt(categoryId);
+
+    if (isNaN(categoryIdNum)) {
+      return res.status(400).json({
+        success: false,
+        message: "分类ID必须是数字",
+      });
+    }
+
+    // 获取数据
+    const result = await BookService.getBooksByCategory(categoryIdNum, {
+      page: pageNum,
+      limit: limitNum,
+      sort,
+    });
+
+    // 标准化响应格式
+    res.json({
+      success: true,
+      data: Array.isArray(result.books) ? result.books : [],
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: result.total || 0,
+        pages: Math.ceil((result.total || 0) / limitNum),
+      },
+    });
+  } catch (error) {
+    console.error("根据分类获取图书错误:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "根据分类获取图书失败",
+    });
   }
 });
 
@@ -40,41 +87,63 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    // 调用封装的方法
-    const book = await BookRepository.getBookById(id);
+    const book = await BookService.getBookById(id);
 
     if (!book) {
-      return res.status(404).json({ message: "图书不存在" });
+      return res.status(404).json({
+        success: false,
+        message: "图书不存在",
+      });
     }
 
-    res.json(book);
+    res.json({
+      success: true,
+      data: book,
+    });
   } catch (error) {
     console.error("获取图书详情错误:", error);
-    res.status(500).json({ message: "获取图书详情失败" });
+    res.status(500).json({
+      success: false,
+      message: "获取图书详情失败",
+    });
   }
 });
 
 // 获取热门图书
 router.get("/featured/hot", async (req, res) => {
   try {
-    // 调用封装的方法
-    const books = await BookRepository.getHotBooks();
-    res.json(books);
+    const { limit = 10 } = req.query;
+    const books = await BookService.getHotBooks(parseInt(limit));
+
+    res.json({
+      success: true,
+      data: books,
+    });
   } catch (error) {
     console.error("获取热门图书错误:", error);
-    res.status(500).json({ message: "获取热门图书失败" });
+    res.status(500).json({
+      success: false,
+      message: "获取热门图书失败",
+    });
   }
 });
 
 // 获取新书上架
 router.get("/featured/new", async (req, res) => {
   try {
-    // 调用封装的方法
-    const books = await BookRepository.getNewBooks();
-    res.json(books);
+    const { limit = 10 } = req.query;
+    const books = await BookService.getNewBooks(parseInt(limit));
+
+    res.json({
+      success: true,
+      data: books,
+    });
   } catch (error) {
     console.error("获取新书错误:", error);
-    res.status(500).json({ message: "获取新书失败" });
+    res.status(500).json({
+      success: false,
+      message: "获取新书失败",
+    });
   }
 });
 
